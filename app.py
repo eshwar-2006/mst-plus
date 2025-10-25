@@ -1,21 +1,55 @@
-import subprocess
 import streamlit as st
+import subprocess
+import textwrap
+import os
 
-# Compile mst.c at runtime
-compile_result = subprocess.run(['gcc', 'mst.c', '-o', 'mst_exec'])
-if compile_result.returncode != 0:
-    st.error("Failed to compile mst.c")
-    st.stop()
+st.title("Extended MST (C Kruskal) with Node Weights")
 
-st.title("Extended MST: Nodes + Edges Weights")
+st.write("Input format:")
+st.code("""
+num_nodes num_edges
+node_weight[1] node_weight[2] ... node_weight[n]
+u1 v1 edge_weight1
+...
+um vm edge_weightm
+""", language="text")
 
-num_nodes = st.number_input("Number of nodes", min_value=1, value=4)
-num_edges = st.number_input("Number of edges", min_value=1, value=5)
+default_input = """\
+4 4
+3 2 4 1
+1 2 5
+2 3 6
+3 4 2
+4 1 3
+"""
 
-st.write("Enter edge data in format: u v edge_weight node_weight_u node_weight_v")
-edge_data = st.text_area("Edges", "1 2 10 3 4\n2 3 5 4 2")
+inp = st.text_area("Input data", value=default_input, height=260)
+
+def compile_and_run(input_data: str) -> str:
+    # Ensure the C file exists in the current directory
+    if not os.path.exists("mst.c"):
+        return "mst.c not found in the working directory."
+
+    # Compile
+    compile_cmd = ["gcc", "mst.c", "-o", "mst_exec"]
+    proc = subprocess.run(compile_cmd, capture_output=True, text=True)
+    if proc.returncode != 0:
+        return f"Compilation failed:\n{proc.stderr}"
+
+    # Run with input
+    run_cmd = ["./mst_exec"]
+    try:
+        proc = subprocess.run(run_cmd, input=input_data, capture_output=True, text=True, timeout=20)
+    except subprocess.TimeoutExpired:
+        return "Execution timed out."
+    if proc.returncode != 0:
+        return f"Execution failed:\n{proc.stderr}"
+    return proc.stdout.strip()
 
 if st.button("Compute MST"):
-    input_str = f"{num_nodes} {num_edges}\n{edge_data}"
-    result = subprocess.run(['./mst_exec'], input=input_str.encode(), capture_output=True)
-    st.success(result.stdout.decode())
+    with st.spinner("Computing..."):
+        output = compile_and_run(inp)
+    st.success("Result:")
+    st.write(output)
+
+st.caption("Notes: Ensure mst.c and app.py are in the same directory. The app compiles mst.c on each run and feeds the input as a single string.")
