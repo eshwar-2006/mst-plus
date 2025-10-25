@@ -80,3 +80,7 @@ int main() {
     for (int i = 0; i < m && edges_used < n - 1; i++) {
         int u = edges[i].u;
         int v = edg
+fflush(stdout);
+printf("%lld\n", mst_weight);
+fflush(stdout);
+
