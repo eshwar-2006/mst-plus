@@ -1,6 +1,5 @@
 import streamlit as st
 import subprocess
-import textwrap
 import os
 
 st.title("Extended MST (C Kruskal) with Node Weights")
@@ -14,6 +13,7 @@ u1 v1 edge_weight1
 um vm edge_weightm
 """, language="text")
 
+# Default input example
 default_input = """\
 4 4
 3 2 4 1
@@ -26,30 +26,12 @@ default_input = """\
 inp = st.text_area("Input data", value=default_input, height=260)
 
 def compile_and_run(input_data: str) -> str:
-    # Ensure the C file exists in the current directory
+    # Ensure mst.c exists
     if not os.path.exists("mst.c"):
         return "mst.c not found in the working directory."
 
-    # Compile
+    # Compile mst.c
     compile_cmd = ["gcc", "mst.c", "-o", "mst_exec"]
-    proc = subprocess.run(compile_cmd, capture_output=True, text=True)
-    if proc.returncode != 0:
-        return f"Compilation failed:\n{proc.stderr}"
-
-    # Run with input
-    run_cmd = ["./mst_exec"]
-    try:
-        proc = subprocess.run(run_cmd, input=input_data, capture_output=True, text=True, timeout=20)
-    except subprocess.TimeoutExpired:
-        return "Execution timed out."
-    if proc.returncode != 0:
-        return f"Execution failed:\n{proc.stderr}"
-    return proc.stdout.strip()
-
-if st.button("Compute MST"):
-    with st.spinner("Computing..."):
-        output = compile_and_run(inp)
-    st.success("Result:")
-    st.write(output)
-
-st.caption("Notes: Ensure mst.c and app.py are in the same directory. The app compiles mst.c on each run and feeds the input as a single string.")
+    compile_proc = subprocess.run(compile_cmd, capture_output=True, text=True)
+    if compile_proc.returncode != 0:
+        return f"Compila
