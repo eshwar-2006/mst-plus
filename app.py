@@ -1,40 +1,42 @@
 import streamlit as st
-from subprocess import run, PIPE
+import subprocess
+import os
 
 st.title("Extended MST: Nodes + Edges Weights")
 
-# Input for nodes and edges
 num_nodes = st.number_input("Number of nodes", min_value=1, value=4)
-num_edges = st.number_input("Number of edges", min_value=1, value=5)
+num_edges = st.number_input("Number of edges", min_value=1, value=4)
 
-st.write("Enter edge data in format: u v edge_weight node_weight_u node_weight_v")
-
-edge_data = st.text_area("Edges", "1 2 10 3 4\n2 3 5 4 2")
+node_weights_input = st.text_input("Node weights (space separated)", "3 2 4 1")
+edges_input = st.text_area("Edges (u v edge_weight)", "1 2 5\n2 3 6\n3 4 2\n4 1 3", height=150)
 
 if st.button("Compute MST"):
-    # Prepare input for C program
-    input_str = f"{num_nodes} {num_edges}\n{edge_data}"
-    
-    # Run C executable
-    result = run(['./mst_exec'], input=input_str.encode(), stdout=PIPE)
-    st.success(result.stdout.decode())
-import subprocess
+    node_weights_list = node_weights_input.strip().split()
+    if len(node_weights_list) != num_nodes:
+        st.error(f"Number of node weights ({len(node_weights_list)}) does not match number of nodes ({num_nodes})")
+    else:
+        input_lines = [f"{num_nodes} {num_edges}", node_weights_input.strip()] + edges_input.strip().splitlines()
+        input_str = "\n".join(input_lines)
 
-input_str = """4 4
-3 2 4 1
-1 2 5
-2 3 6
-3 4 2
-4 1 3
-"""
-
-result = subprocess.run(
-    ["./mst_exec"],
-    input=input_str.strip(),  # remove extra spaces
-    capture_output=True,
-    text=True,
-    timeout=10
-)
-
-print(result.stdout)  # This should show the MST weight
-
+        if not os.path.exists("mst.c"):
+            st.error("mst.c not found in the working directory.")
+        else:
+            compile_proc = subprocess.run(["gcc", "mst.c", "-o", "mst_exec"], capture_output=True, text=True)
+            if compile_proc.returncode != 0:
+                st.error(f"Compilation failed:\n{compile_proc.stderr}")
+            else:
+                try:
+                    run_proc = subprocess.run(
+                        ["./mst_exec"],
+                        input=input_str,
+                        capture_output=True,
+                        text=True,
+                        timeout=10
+                    )
+                    if run_proc.returncode != 0:
+                        st.error(f"Execution failed:\n{run_proc.stderr}")
+                    else:
+                        st.success("MST Computed Successfully!")
+                        st.code(run_proc.stdout.strip())
+                except subprocess.TimeoutExpired:
+                    st.error("Execution timed out.")
