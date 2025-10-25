@@ -18,4 +18,23 @@ if st.button("Compute MST"):
     # Run C executable
     result = run(['./mst_exec'], input=input_str.encode(), stdout=PIPE)
     st.success(result.stdout.decode())
+import subprocess
+
+input_str = """4 4
+3 2 4 1
+1 2 5
+2 3 6
+3 4 2
+4 1 3
+"""
+
+result = subprocess.run(
+    ["./mst_exec"],
+    input=input_str.strip(),  # remove extra spaces
+    capture_output=True,
+    text=True,
+    timeout=10
+)
+
+print(result.stdout)  # This should show the MST weight
 
