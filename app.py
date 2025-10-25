@@ -2,7 +2,7 @@ import streamlit as st
 import subprocess
 import os
 
-st.title("Extended MST (C Kruskal) with Node Weights")
+st.title("Extended MST: Node + Edge Weights (C Kruskal)")
 
 st.write("Input format:")
 st.code("""
@@ -13,7 +13,6 @@ u1 v1 edge_weight1
 um vm edge_weightm
 """, language="text")
 
-# Default input example
 default_input = """\
 4 4
 3 2 4 1
@@ -26,29 +25,29 @@ default_input = """\
 inp = st.text_area("Input data", value=default_input, height=260)
 
 def compile_and_run(input_data: str) -> str:
-    if not os.path.exists("mst.c"):
-        return "mst.c not found in the working directory."
+    if not os.path.exists("mst_ext.c"):
+        return "mst_ext.c not found in the working directory."
 
-    # Compile mst.c
-    compile_cmd = ["gcc", "mst.c", "-o", "mst_exec"]
-    compile_proc = subprocess.run(compile_cmd, capture_output=True, text=True)
-    if compile_proc.returncode != 0:
-        return f"Compilation failed:\n{compile_proc.stderr}"  # <-- fixed
+    # Compile
+    compile_cmd = ["gcc", "mst_ext.c", "-o", "mst_ext_exec"]
+    proc = subprocess.run(compile_cmd, capture_output=True, text=True)
+    if proc.returncode != 0:
+        return f"Compilation failed:\n{proc.stderr}"
 
-    # Run the executable
-    run_cmd = ["./mst_exec"]
+    # Run with input
+    run_cmd = ["./mst_ext_exec"]
     try:
-        run_proc = subprocess.run(
-            run_cmd,
-            input=input_data.strip(),
-            capture_output=True,
-            text=True,
-            timeout=20
-        )
+        proc = subprocess.run(run_cmd, input=input_data, capture_output=True, text=True, timeout=20)
     except subprocess.TimeoutExpired:
         return "Execution timed out."
+    if proc.returncode != 0:
+        return f"Execution failed:\n{proc.stderr}"
+    return proc.stdout.strip()
 
-    if run_proc.returncode != 0:
-        return f"Execution failed:\n{run_proc.stderr}"  # <-- fixed
+if st.button("Compute MST"):
+    with st.spinner("Computing..."):
+        output = compile_and_run(inp)
+    st.success("Result:")
+    st.write(output)
 
-    return run_proc.stdout.strip()
+st.caption("Note: The app compiles mst_ext.c on each run and feeds the input as a single string.")
