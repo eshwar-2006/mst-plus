@@ -19,4 +19,4 @@ if st.button("Compute MST"):
     input_str = f"{num_nodes} {num_edges}\n{edge_data}"
     result = subprocess.run(['./mst_exec'], input=input_str.encode(), capture_output=True)
     st.success(result.stdout.decode())
-MST weight = sum of selected edges + sum of all node weights included in MST (count each node once)
+
