@@ -26,7 +26,6 @@ default_input = """\
 inp = st.text_area("Input data", value=default_input, height=260)
 
 def compile_and_run(input_data: str) -> str:
-    # Ensure mst.c exists
     if not os.path.exists("mst.c"):
         return "mst.c not found in the working directory."
 
@@ -34,4 +33,22 @@ def compile_and_run(input_data: str) -> str:
     compile_cmd = ["gcc", "mst.c", "-o", "mst_exec"]
     compile_proc = subprocess.run(compile_cmd, capture_output=True, text=True)
     if compile_proc.returncode != 0:
-        return f"Compila
+        return f"Compilation failed:\n{compile_proc.stderr}"  # <-- fixed
+
+    # Run the executable
+    run_cmd = ["./mst_exec"]
+    try:
+        run_proc = subprocess.run(
+            run_cmd,
+            input=input_data.strip(),
+            capture_output=True,
+            text=True,
+            timeout=20
+        )
+    except subprocess.TimeoutExpired:
+        return "Execution timed out."
+
+    if run_proc.returncode != 0:
+        return f"Execution failed:\n{run_proc.stderr}"  # <-- fixed
+
+    return run_proc.stdout.strip()
